@@ -1,1571 +1,914 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-// Custom Inline SVGs for Lucide Icons to ensure reliable rendering without external dependency issues
-const PhoneIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-);
+const Icons = {
+  Search: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+  Heart: ({ filled, className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>,
+  MapPin: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+  Star: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#0ea5e9" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>,
+  Layers: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>,
+  Grid: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
+  Check: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"></polyline></svg>,
+  X: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+  Filter: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>,
+  ChevronRight: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"></polyline></svg>,
+  ChevronLeft: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"></polyline></svg>,
+  Plus: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+  Minus: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+  Refresh: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>,
+  User: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
+  Calendar: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+  Pool: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 12h20"></path><path d="M4 12v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"></path><path d="M12 12v-3"></path><path d="M10 5l2-2 2 2"></path></svg>,
+  Home: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+};
 
-const MailIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-);
+const GENERIC_GALLERY = [
+  'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+];
 
-const MapPinIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-);
+const MOCK_ZIMMERS = [
+  {
+    id: 1,
+    name: 'אחוזת נוף הכנרת',
+    location: 'מושב רמות, רמת הגולן',
+    region: 'צפון',
+    type: 'סוויטה',
+    guests: 2,
+    description: 'סוויטות יוקרה עם בריכה פרטית מחוממת ונוף עוצר נשימה לימת הכנרת. חוויה של פעם בחיים המשלבת עיצוב מודרני מוקפד עם הטבע הפראי של רמת הגולן. הסוויטה כוללת מיטת קינג סייז, חדר רחצה מפנק, מרפסת דק פרטית ומטבחון מאובזר.',
+    price: 1200,
+    rating: 9.4,
+    reviews: 128,
+    image: 'https://images.unsplash.com/photo-1587061949409-02df41d5e562?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    gallery: ['https://images.unsplash.com/photo-1587061949409-02df41d5e562?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80', ...GENERIC_GALLERY],
+    amenities: ['בריכה פרטית', 'ג׳קוזי', 'ארוחת בוקר', 'נוף לכנרת', 'מכונת אספרסו', 'אינטרנט אלחוטי'],
+    isPopular: true
+  },
+  {
+    id: 2,
+    name: 'בקתות יער הקסם',
+    location: 'אמירים, גליל עליון',
+    region: 'צפון',
+    type: 'בקתה',
+    guests: 4,
+    description: 'בקתות עץ רומנטיות בלב חורש טבעי. מתאים לזוגות או משפחות קטנות המחפשים שקט ושלווה הרחק מההמון הסואן. כל בקתה מבודדת ומציעה פרטיות מוחלטת.',
+    price: 850,
+    rating: 8.9,
+    reviews: 84,
+    image: 'https://images.unsplash.com/photo-1542718610-a1d656d1884c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    gallery: ['https://images.unsplash.com/photo-1542718610-a1d656d1884c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80', ...GENERIC_GALLERY],
+    amenities: ['ג׳קוזי', 'מטבחון', 'טבע ונוף', 'ספא', 'טבעוני'],
+    isPopular: false
+  },
+  {
+    id: 3,
+    name: 'סוויטות חלום מדברי',
+    location: 'מצפה רמון, נגב',
+    region: 'דרום',
+    type: 'סוויטה',
+    guests: 2,
+    description: 'חוויה מדברית ייחודית עם בריכת אינפיניטי הצופה אל מכתש רמון. שילוב מושלם של יוקרה אבסולוטית וטבע בראשיתי. בלילה תוכלו ליהנות מתצפית כוכבים מרהיבה מהמרפסת הפרטית.',
+    price: 1500,
+    rating: 9.7,
+    reviews: 210,
+    image: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    gallery: ['https://images.unsplash.com/photo-1510798831971-661eb04b3739?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80', ...GENERIC_GALLERY],
+    amenities: ['בריכה מחוממת', 'ארוחת בוקר', 'טיולי ג׳יפים', 'עיסויים', 'צפייה בכוכבים'],
+    isPopular: true
+  },
+  {
+    id: 4,
+    name: 'הפנינה של ראש פינה',
+    location: 'ראש פינה, גליל',
+    region: 'צפון',
+    type: 'צימר',
+    guests: 3,
+    description: 'מבנה אבן משוחזר מהמאה ה-19 בלב המושבה העתיקה. אווירה קסומה והיסטורית, במרחק הליכה קצר מהגלריות והמסעדות המעולות של ראש פינה.',
+    price: 950,
+    rating: 9.1,
+    reviews: 156,
+    image: 'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    gallery: ['https://images.unsplash.com/photo-1560185127-6ed189bf02f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80', ...GENERIC_GALLERY],
+    amenities: ['ארוחת בוקר', 'מרפסת נוף', 'קרוב למסעדות', 'עיצוב וינטג׳'],
+    isPopular: false
+  },
+  {
+    id: 5,
+    name: 'וילה מול הים',
+    location: 'קיסריה, מישור החוף',
+    region: 'מרכז',
+    type: 'וילה',
+    guests: 12,
+    description: 'וילת נופש ענקית למשפחות עם חצר גדולה, עמדת מנגל ובריכה ענקית מול הים. מושלמת לאירועים קטנים, שבתות חתן או חופשה משפחתית מורחבת.',
+    price: 2500,
+    rating: 8.5,
+    reviews: 42,
+    image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    gallery: ['https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80', ...GENERIC_GALLERY],
+    amenities: ['בריכה', 'מתאים למשפחות', 'מנגל', 'קרבה לים', 'מטבחון', 'חניה פרטית'],
+    isPopular: false
+  },
+  {
+    id: 6,
+    name: 'שאטו פרובנס בגליל',
+    location: 'כפר ורדים, גליל מערבי',
+    region: 'צפון',
+    type: 'סוויטה',
+    guests: 2,
+    description: 'אחוזת בוטיק בעיצוב צרפתי קלאסי. גן מטופח, בריכת אבן טבעית וספא עשיר מציעים חופשה לזוגות בלבד ברמה בינלאומית.',
+    price: 1800,
+    rating: 9.8,
+    reviews: 312,
+    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    gallery: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80', ...GENERIC_GALLERY],
+    amenities: ['בריכה', 'ספא', 'לזוגות בלבד', 'ארוחת שף', 'ג׳קוזי'],
+    isPopular: true
+  }
+];
 
-const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-);
+const FILTER_OPTIONS = {
+  amenities: ['בריכה פרטית', 'ג׳קוזי', 'ארוחת בוקר', 'בריכה מחוממת', 'נוף לכנרת', 'מתאים למשפחות', 'מנגל', 'ספא', 'לזוגות בלבד'],
+  regions: ['צפון', 'מרכז', 'דרום', 'ירושלים'],
+  types: ['סוויטה', 'בקתה', 'וילה', 'צימר', 'מלון בוטיק'],
+  ratings: [
+    { value: 0, label: 'הכל' },
+    { value: 8, label: '8+ (טוב)' },
+    { value: 9, label: '9+ (מעולה)' },
+  ]
+};
 
-const CloseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-);
+const CATEGORIES = [
+  { id: 'all', name: 'הכל', icon: Icons.Grid },
+  { id: 'pool', name: 'עם בריכה', icon: Icons.Pool },
+  { id: 'villa', name: 'וילות', icon: Icons.Home },
+  { id: 'romantic', name: 'לזוגות', icon: Icons.Heart },
+  { id: 'north', name: 'צפון', icon: Icons.MapPin },
+];
 
-const ArrowLeftIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-);
+const SwipeCard = ({ zimmer, onSwipe, active }) => {
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [exitDirection, setExitDirection] = useState(null); 
+  const cardRef = useRef(null);
+  const startXRef = useRef(0);
+  const SWIPE_THRESHOLD = 120;
 
-const ArrowRightIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-);
-
-const TrendingUpIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-);
-
-const AwardIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-);
-
-const UsersIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-);
-
-const CalendarIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-);
-
-const MenuIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-);
-
-export default function App() {
-  // Navigation active tab
-  const [activeTab, setActiveTab] = useState('home');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Selected service for detailed modal popup
-  const [selectedService, setSelectedService] = useState(null);
-  
-  // Case studies active filter
-  const [caseFilter, setCaseFilter] = useState('all');
-
-  // Lead Modal Popup (Audit) state
-  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
-  const [auditSubmitted, setAuditSubmitted] = useState(false);
-  const [auditForm, setAuditForm] = useState({ name: '', phone: '', email: '', website: '' });
-
-  // Main Contact Form state
-  const [contactForm, setContactForm] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    company: '',
-    service: 'קידום ממומן',
-    budget: 10000,
-    message: ''
-  });
-  const [contactSubmitted, setContactSubmitted] = useState(false);
-
-  // ROI Calculator States
-  const [calcBudget, setCalcBudget] = useState(15000); // 15k NIS default
-  const [calcCpc, setCalcCpc] = useState(4.5); // Average cost per click (NIS)
-  const [calcConvRate, setCalcConvRate] = useState(2.2); // 2.2% Conversion rate
-  const [calcAvgValue, setCalcAvgValue] = useState(850); // Average sale value (NIS)
-
-  // Auto trigger audit modal after 8 seconds (only once)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsAuditModalOpen(true);
-    }, 8000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Services data
-  const services = [
-    {
-      id: 'seo',
-      title: 'קידום אורגני בגוגל (SEO)',
-      shortDesc: 'להופיע במקומות הראשונים בתוצאות החיפוש הטבעיות בגוגל ולהזרים תנועה איכותית ורווחית לטווח הארוך.',
-      icon: '🔍',
-      detailedDesc: 'קידום אורגני (SEO) הוא המפתח לנוכחות דיגיטלית יציבה שאינה תלויה בתקציב מדיה יומי. אנחנו בדיגיטל וייב מתמחים באופטימיזציה טכנולוגית עמוקה של האתר, כתיבת תוכן ערכי וממוקד לקוח, ובניית פרופיל קישורים חזק וסמכותי.',
-      bullets: [
-        'מחקר מילות מפתח מקיף ואנליזת מתחרים קשוחה',
-        'אופטימיזציית On-Page קפדנית (קוד, מהירות טעינה, חווית משתמש)',
-        'אסטרטגיית תוכן חכמה שגוגל אוהב והגולשים מעריצים',
-        'בניית פרופיל קישורים איכותי מאתרים מובילים בישראל',
-        'דוחות שקופים מדי חודש עם מעקב מיקומים ותנועה'
-      ],
-      color: 'from-purple-500 to-indigo-600'
-    },
-    {
-      id: 'ppc',
-      title: 'פרסום ממומן (Google & Social PPC)',
-      shortDesc: 'קמפיינים ממוקדי המרות ולידים בגוגל, פייסבוק, אינסטגרם, לינקדאין וטיקטוק עם אופטימיזציה יומיומית.',
-      icon: '🚀',
-      detailedDesc: 'להגיע לקהל היעד המדויק ביותר ברגע המושלם. אנו מנהלים תקציבי פרסום גדולים בתוצאות חסרות פשרות, תוך שימוש בכלי טרגוט מתקדמים, קריאייטיב פורץ דרך ואסטרטגיית רימרקטינג (שיווק מחדש) מתקדמת.',
-      bullets: [
-        'קמפיינים ברשת החיפוש, דיספליי ו-Shopping בגוגל',
-        'פרסום מפולח ברשתות Meta (פייסבוק ואינסטגרם)',
-        'קמפיינים יצירתיים בטיקטוק וטרגוט עסקי בלינקדאין',
-        'עיצוב באנרים וקריאייטיב מנצח המניע לפעולה',
-        'שיפור מתמיד של יחס ההמרה (CRO) ועלות הרכישה (CPA)'
-      ],
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      id: 'social',
-      title: 'ניהול רשתות חברתיות 360 (SMO)',
-      shortDesc: 'בניית קהילה נאמנה, שפה מותגית ייחודית ויצירת תוכן ויזואלי מהפנט שיוצר מעורבות אמיתית.',
-      icon: '📱',
-      detailedDesc: 'הנוכחות החברתית שלכם היא כרטיס הביקור החי של העסק. אנחנו מפיחים חיים בדפים העסקיים שלכם דרך כתיבה קריאייטיבית, תכנון גאנט חודשי מוקפד, ניהול תגובות ואינטראקציה, ועיצוב ויזואלי ברמה הגבוהה ביותר.',
-      bullets: [
-        'יצירת שפה ויזואלית וטקסטואלית ייחודית למותג',
-        'כתיבה ועיצוב פוסטים, סטוריז וסרטוני Reels/TikTok',
-        'ניהול קהילות ומענה אקטיבי לגולשים להגברת הנאמנות',
-        'שיתופי פעולה עם משפיענים ומובילי דעת קהל',
-        'מדידה חודשית של חשיפה, מעורבות וגידול אורגני'
-      ],
-      color: 'from-pink-500 to-rose-500'
-    },
-    {
-      id: 'native',
-      title: 'פרסום בטאבולה ואאוטבריין (Native)',
-      shortDesc: 'חשיפה באתרי התוכן הגדולים בישראל (Ynet, Mako, וכו\') באמצעות כתבות תדמית ממוקדות המרות.',
-      icon: '📰',
-      detailedDesc: 'פרסום נייטיב מאפשר לכם לפגוש את הגולש במצב רוח של קריאה ולמידה. אנו מייצרים כתבות תוכן מרתקות המספקות ערך אמיתי, המנווטות את הקורא בצורה חכמה ומתוחכמת אל עבר השארת פרטים או רכישה.',
-      bullets: [
-        'כתיבת כתבות תוכן ואאוטליין שיווקי המותאם לנישה שלכם',
-        'הפצת כתבות ברשתות Taboola ו-Outbrain באתרי המדיה המובילים',
-        'סגמנטציה מתקדמת והפרדת קהלים קרים לעומת קהלים חמים',
-        'יצירת כותרות ותמונות מסקרנות בבדיקות A/B Testing קבועות',
-        'חיבור פיקסלים מתקדמים למדידת המרות ישירות מהכתבה'
-      ],
-      color: 'from-emerald-500 to-teal-500'
-    },
-    {
-      id: 'sites',
-      title: 'ניהול ואופטימיזציית אתרים 360',
-      shortDesc: 'שירות מקיף המבטיח שהאתר שלכם עובד ללא הפסקה, נראה מעולה, מהיר ומאובטח במערכות וורדפרס ואי-שופ.',
-      icon: '🛠️',
-      detailedDesc: 'האתר שלכם הוא הלב הפועם של הפעילות הדיגיטלית. אנחנו לוקחים אחריות מלאה על הזמינות, האבטחה, עדכוני המערכת, והטמעת שינויים עיצוביים או פונקציונליים באופן שוטף כדי שהאתר יתפקד כמכונת המרות משומנת.',
-      bullets: [
-        'תחזוקה שוטפת, גיבויים ואבטחת מידע קפדנית',
-        'שיפור מהירות טעינה וחוויית משתמש (Core Web Vitals)',
-        'העלאת מוצרים, עדכון תכנים ובאנרים עיצוביים',
-        'ניהול חנויות אי-קומרס (WooCommerce, E-shop ועוד)',
-        'אינטגרציה של מערכות סליקה, CRM וניוזלטרים'
-      ],
-      color: 'from-amber-500 to-orange-500'
-    },
-    {
-      id: 'strategy',
-      title: 'אסטרטגיה שיווקית ואנליטיקס',
-      shortDesc: 'בניית מפת דרכים אסטרטגית מבוססת דאטה וחיבור תשתיות מדידה מדויקות (GA4, GTM).',
-      icon: '📊',
-      detailedDesc: 'אנחנו עובדים חכם ופשוט – לא יוצאים לדרך בלי אסטרטגיה מותאמת אישית לכל עסק, ולא ממשיכים בלי מדידת נתונים אבסולוטית. אנו מנתחים, מעבדים ומייצרים תובנות שיווקיות שמייצרות עבורכם את מקסימום התוצאות.',
-      bullets: [
-        'בניית תמהיל תקציב שיווק רב-ערוצי (Omnichannel)',
-        'הטמעת Google Analytics 4 ו-Google Tag Manager מתקדם',
-        'הגדרת משפכי המרה מדויקים ומעקב אחר מסע הגולש',
-        'דוחות ביצועים דינמיים בזמן אמת (Looker Studio)',
-        'פגישות ייעוץ אסטרטגיות תקופתיות להתאמת הפעילות לשינויי השוק'
-      ],
-      color: 'from-indigo-500 to-purple-600'
+    if (active) {
+      setDragX(0);
+      setExitDirection(null);
+      setIsDragging(false);
     }
-  ];
+  }, [active, zimmer.id]);
 
-  // Case Studies data
-  const caseStudies = [
-    {
-      id: 1,
-      category: 'ecommerce',
-      company: 'שופ-סטייל (מותג אופנה אונליין)',
-      achievement: 'גידול של 340% במכירות תוך 4 חודשים',
-      details: 'החלפנו את מערך הקמפיינים הקיים באסטרטגיית פרסום דינמית בגוגל שופינג ומטא בשילוב רימרקטינג מותאם אישית.',
-      stats: { primary: '+340%', secondary: 'פי 4.2 ROI' },
-      tag: 'אי-קומרס'
-    },
-    {
-      id: 2,
-      category: 'b2b',
-      company: 'חברת הייטק סינרג\'י',
-      achievement: '180 לידים איכותיים בחודש מקהל יעד גלובלי',
-      details: 'קמפיין ממוקד להפליא בלינקדאין וגוגל חיפוש עם דפי נחיתה ייעודיים שהציעו מדריך מקצועי מותאם לתעשייה.',
-      stats: { primary: '180 לידים/חודש', secondary: '-45% בעלות ליד' },
-      tag: 'B2B & הייטק'
-    },
-    {
-      id: 3,
-      category: 'local',
-      company: 'מרכז רפואי מדיקל-אסתטיקס',
-      achievement: 'מילוי יומן תורים חודשי קדימה באופן קבוע',
-      details: 'שילוב של קידום אורגני לביטויי מפתח חזקים בגאוגרפיה ספציפית וקמפיינים ממומנים מבוססי מיקום וסרטוני המלצות.',
-      stats: { primary: '100% תפוסה', secondary: 'מקום 1 בגוגל' },
-      tag: 'עסקים מקומיים'
-    },
-    {
-      id: 4,
-      category: 'ecommerce',
-      company: 'רהיטי מעצבים "קאזה"',
-      achievement: 'החזר השקעה ממוצע של 1:8 בקמפיינים',
-      details: 'בנינו קהלי יעד דומים (Lookalike) מבוססי רוכשים קודמים ופרסמנו קטלוג מוצרים חכם המותאם למחפשי עיצוב הבית.',
-      stats: { primary: 'ROI 1:8', secondary: '+120% סל קניה ממוצע' },
-      tag: 'אי-קומרס'
-    },
-    {
-      id: 5,
-      category: 'b2b',
-      company: 'סוכנות ביטוח "עתיד בטוח"',
-      achievement: 'הקמת מכונת לידים חמה דרך טאבולה',
-      details: 'כתיבת כתבת תוכן אודות שינויים ברפורמת הפנסיה והפצתה בטאבולה ואאוטבריין. הכתבה הניבה אחוזי המרה חסרי תקדים.',
-      stats: { primary: '540+ לידים', secondary: '92% איכות גבוהה' },
-      tag: 'פיננסים וביטוח'
-    }
-  ];
-
-  // Testimonials
-  const testimonials = [
-    {
-      name: 'רן לוי',
-      role: 'מנכ"ל שופ-סטייל',
-      text: 'עבדנו עם לא מעט משרדי פרסום בעבר, אבל ב-Digital Vibe מצאנו שותפים אמיתיים לדרך. הנתונים לא משקרים - המכירות שלנו הגיעו לשיא חדש והליווי האישי והשקיפות מלאים.',
-      avatar: '👨‍💼'
-    },
-    {
-      name: 'מיכל אהרוני',
-      role: 'סמנכ"לית שיווק, Synergy Group',
-      text: 'תפעול קמפיין B2B מורכב הוא משימה קשה מאוד. הצוות של דיגיטל וייב פיצח את הקהל שלנו בלינקדאין והביא לנו לידים איכותיים מחברות ענק בחו"ל. ממליצה בחום!',
-      avatar: '👩‍💼'
-    },
-    {
-      name: 'ד"ר אלון שגב',
-      role: 'בעלים, מדיקל אסתטיקס',
-      text: 'הקידום האורגני שלהם פשוט קסם. אנחנו נמצאים במקומות הראשונים במילות החיפוש הכי תחרותיות בתחום האסתטיקה הרפואית. הטלפון במרפאה לא מפסיק לצלצל.',
-      avatar: '👨‍ק'
-    }
-  ];
-
-  // Calculator Logic Formulator
-  const calculateROI = () => {
-    // Basic Calculations based on current state variables
-    const estimatedClicks = Math.round(calcBudget / calcCpc);
-    const estimatedConversions = Math.round(estimatedClicks * (calcConvRate / 100));
-    const estimatedRevenue = Math.round(estimatedConversions * calcAvgValue);
-    const estimatedRoi = calcBudget > 0 ? ((estimatedRevenue - calcBudget) / calcBudget * 100).toFixed(0) : 0;
-    const estimatedCpa = estimatedConversions > 0 ? Math.round(calcBudget / estimatedConversions) : 0;
-
-    // Vibe optimized metrics (simulate Digital Vibe optimization results: usually +30% conv rate, -15% CPC)
-    const vibeCpc = Math.max(1, +(calcCpc * 0.85).toFixed(2));
-    const vibeConvRate = +(calcConvRate * 1.35).toFixed(2);
-    
-    const vibeClicks = Math.round(calcBudget / vibeCpc);
-    const vibeConversions = Math.round(vibeClicks * (vibeConvRate / 100));
-    const vibeRevenue = Math.round(vibeConversions * calcAvgValue);
-    const vibeRoi = calcBudget > 0 ? ((vibeRevenue - calcBudget) / calcBudget * 100).toFixed(0) : 0;
-    const vibeCpa = vibeConversions > 0 ? Math.round(calcBudget / vibeConversions) : 0;
-
-    return {
-      clicks: estimatedClicks,
-      conversions: estimatedConversions,
-      revenue: estimatedRevenue,
-      roi: estimatedRoi,
-      cpa: estimatedCpa,
-      vibe: {
-        cpc: vibeCpc,
-        clicks: vibeClicks,
-        convRate: vibeConvRate,
-        conversions: vibeConversions,
-        revenue: vibeRevenue,
-        roi: vibeRoi,
-        cpa: vibeCpa,
-        revenueGain: vibeRevenue - estimatedRevenue
-      }
-    };
+  const handleDragStart = (clientX) => {
+    if (!active || exitDirection) return;
+    startXRef.current = clientX;
+    setIsDragging(true);
   };
 
-  const results = calculateROI();
-
-  // Handlers for inputs
-  const handleContactSubmit = (e) => {
-    e.preventDefault();
-    if (!contactForm.name || !contactForm.phone || !contactForm.email) {
-      return;
-    }
-    // Simulation of API request
-    setContactSubmitted(true);
+  const handleDragMove = (clientX) => {
+    if (!isDragging || !active) return;
+    setDragX(clientX - startXRef.current);
   };
 
-  const handleAuditSubmit = (e) => {
-    e.preventDefault();
-    if (!auditForm.name || !auditForm.phone) {
-      return;
+  const handleDragEnd = () => {
+    if (!isDragging || !active) return;
+    setIsDragging(false);
+    if (dragX > SWIPE_THRESHOLD) {
+      setExitDirection('right');
+      setTimeout(() => onSwipe('right', zimmer), 300);
+    } else if (dragX < -SWIPE_THRESHOLD) {
+      setExitDirection('left');
+      setTimeout(() => onSwipe('left', zimmer), 300);
+    } else {
+      setDragX(0);
     }
-    setAuditSubmitted(true);
-    setTimeout(() => {
-      setIsAuditModalOpen(false);
-      setAuditSubmitted(false);
-      setAuditForm({ name: '', phone: '', email: '', website: '' });
-    }, 4000);
+  };
+
+  let transform = '';
+  if (exitDirection === 'right') {
+    transform = `translateX(500px) rotate(30deg)`;
+  } else if (exitDirection === 'left') {
+    transform = `translateX(-500px) rotate(-30deg)`;
+  } else if (isDragging) {
+    transform = `translateX(${dragX}px) rotate(${dragX * 0.05}deg)`;
+  }
+
+  const cardStyle = {
+    transform,
+    transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+    zIndex: active ? 10 : 0,
+    opacity: exitDirection ? 0 : 1,
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    touchAction: 'none' 
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-gray-100 font-sans selection:bg-purple-600 selection:text-white antialiased" dir="rtl">
-      
-      {/* Top microbar */}
-      <div className="bg-[#080B12] border-b border-gray-800 text-xs text-gray-400 py-2 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <PhoneIcon />
-              <a href="tel:03-723-2339" className="hover:text-purple-400 transition-colors">03-723-2339</a>
-            </span>
-            <span className="flex items-center gap-1">
-              <MailIcon />
-              <a href="mailto:info@digitalvibe.co.il" className="hover:text-purple-400 transition-colors">info@digitalvibe.co.il</a>
-            </span>
+    <div 
+      ref={cardRef}
+      style={cardStyle}
+      className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 select-none cursor-grab active:cursor-grabbing flex flex-col"
+      onMouseDown={(e) => handleDragStart(e.clientX)}
+      onMouseMove={(e) => handleDragMove(e.clientX)}
+      onMouseUp={handleDragEnd}
+      onMouseLeave={() => { if (isDragging) handleDragEnd(); }}
+      onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
+      onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
+      onTouchEnd={handleDragEnd}
+    >
+      <div className="relative flex-1">
+        <img src={zimmer.image} alt={zimmer.name} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/90 pointer-events-none"></div>
+        
+        <div 
+          className="absolute top-8 left-8 border-4 border-emerald-400 text-emerald-400 font-black text-4xl rounded-2xl px-6 py-2 opacity-0 transition-opacity duration-200 pointer-events-none bg-black/20 backdrop-blur-sm"
+          style={{ opacity: dragX > 50 ? Math.min(dragX / SWIPE_THRESHOLD, 1) : 0, transform: 'rotate(-15deg)' }}
+        >
+          שמור
+        </div>
+        <div 
+          className="absolute top-8 right-8 border-4 border-rose-500 text-rose-500 font-black text-4xl rounded-2xl px-6 py-2 opacity-0 transition-opacity duration-200 pointer-events-none bg-black/20 backdrop-blur-sm"
+          style={{ opacity: dragX < -50 ? Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1) : 0, transform: 'rotate(15deg)' }}
+        >
+          דלג
+        </div>
+        
+        <div className="absolute bottom-0 w-full p-6 text-white text-right">
+          <div className="flex justify-between items-end mb-2">
+            <h2 className="text-3xl font-bold drop-shadow-md">{zimmer.name}</h2>
+            <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-lg text-sm font-bold">
+              <Icons.Star className="w-4 h-4 text-sky-300" /> {zimmer.rating}
+            </div>
           </div>
-          <div className="hidden md:flex items-center gap-4">
-            <span>משרד פרסום דיגיטלי מתקדם מאז 2008</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>זמינים להתחלת פרויקט חדש</span>
+          <div className="flex items-center gap-2 text-sm text-gray-200 mb-3 drop-shadow-sm">
+            <Icons.MapPin className="w-4 h-4" /> {zimmer.location}
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6 bg-white text-right shrink-0">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-2">
+            {zimmer.amenities.slice(0, 2).map((a, i) => (
+              <span key={i} className="text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full">{a}</span>
+            ))}
+          </div>
+          <div className="text-2xl font-black text-slate-900">
+            ₪{zimmer.price} <span className="text-sm text-gray-500 font-normal">/ לילה</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function App() {
+  const [viewMode, setViewMode] = useState('grid'); // 'grid', 'swipe', 'favorites'
+  const [selectedZimmer, setSelectedZimmer] = useState(null); 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [favorites, setFavorites] = useState([]);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('all');
+  
+  // Mobile UI state
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  
+  // Swipe mode state
+  const [swipeQueue, setSwipeQueue] = useState([]);
+  const [currentSwipeIndex, setCurrentSwipeIndex] = useState(0);
+
+  // Filter States
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 5000 });
+  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [selectedRegions, setSelectedRegions] = useState([]);
+  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [guests, setGuests] = useState(2);
+  const [minRating, setMinRating] = useState(0);
+
+  useEffect(() => {
+    let filtered = MOCK_ZIMMERS.filter(z => {
+      const matchSearch = z.location.includes(searchQuery) || z.name.includes(searchQuery);
+      const matchPrice = z.price >= priceRange.min && z.price <= priceRange.max;
+      const matchAmenities = selectedAmenities.length === 0 || selectedAmenities.every(a => z.amenities.includes(a));
+      const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(z.region);
+      const matchType = selectedTypes.length === 0 || selectedTypes.includes(z.type);
+      const matchRating = z.rating >= minRating;
+      const matchGuests = z.guests >= guests;
+
+      return matchSearch && matchPrice && matchAmenities && matchRegion && matchType && matchRating && matchGuests;
+    });
+    
+    // Apply quick categories
+    if (activeCategory === 'pool') {
+      filtered = filtered.filter(z => z.amenities.includes('בריכה') || z.amenities.includes('בריכה פרטית'));
+    } else if (activeCategory === 'villa') {
+      filtered = filtered.filter(z => z.type === 'וילה');
+    } else if (activeCategory === 'romantic') {
+      filtered = filtered.filter(z => z.amenities.includes('לזוגות בלבד') || z.guests === 2);
+    } else if (activeCategory === 'north') {
+      filtered = filtered.filter(z => z.region === 'צפון');
+    }
+    
+    setSwipeQueue(filtered);
+    setCurrentSwipeIndex(0);
+  }, [searchQuery, priceRange, selectedAmenities, selectedRegions, selectedTypes, guests, minRating, activeCategory]);
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const toggleFavorite = (zimmer, e) => {
+    if (e) e.stopPropagation(); 
+    const exists = favorites.find(f => f.id === zimmer.id);
+    if (exists) {
+      setFavorites(favorites.filter(f => f.id !== zimmer.id));
+      showToast('הוסר מהמועדפים');
+    } else {
+      setFavorites([...favorites, zimmer]);
+      showToast('נוסף למועדפים! ❤️');
+    }
+  };
+
+  const handleSwipe = (direction, zimmer) => {
+    if (direction === 'right') {
+      if (!favorites.find(f => f.id === zimmer.id)) {
+        setFavorites([...favorites, zimmer]);
+        showToast('נוסף למועדפים! ❤️');
+      }
+    }
+    setCurrentSwipeIndex(prev => prev + 1);
+  };
+
+  const handleNavigation = (mode) => {
+    setViewMode(mode);
+    setSelectedZimmer(null); 
+    window.scrollTo(0, 0);
+  };
+
+  const clearAllFilters = () => {
+    setPriceRange({ min: 0, max: 5000 });
+    setSelectedAmenities([]);
+    setSelectedRegions([]);
+    setSelectedTypes([]);
+    setGuests(1);
+    setMinRating(0);
+    setSearchQuery('');
+    setActiveCategory('all');
+  };
+
+  const renderHeader = () => (
+    <header className="bg-white/90 backdrop-blur-lg text-slate-800 sticky top-0 z-50 border-b border-gray-200 transition-all">
+      <div className="max-w-[1440px] mx-auto px-6 py-4 flex justify-between items-center">
+        <div 
+          className="flex items-center gap-2 cursor-pointer group"
+          onClick={() => handleNavigation('grid')}
+        >
+          <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-sky-500/30 group-hover:scale-105 transition-transform">
+             <Icons.Home className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl font-black tracking-tight">
+            צימר<span className="text-sky-500">Finder</span>
+          </h1>
+        </div>
+        
+        <div className="hidden md:flex gap-8 font-semibold text-gray-600">
+           <button onClick={() => handleNavigation('grid')} className={`hover:text-sky-500 transition-colors ${viewMode === 'grid' ? 'text-sky-500' : ''}`}>חיפוש מקומות</button>
+           <button onClick={() => handleNavigation('swipe')} className={`hover:text-sky-500 transition-colors ${viewMode === 'swipe' ? 'text-sky-500' : ''}`}>גילוי מהיר (Swipe)</button>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => handleNavigation('favorites')}
+            className="relative p-2 text-gray-500 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all"
+          >
+            <Icons.Heart filled={viewMode === 'favorites'} className="w-6 h-6" />
+            {favorites.length > 0 && (
+              <span className="absolute 0 top-0 right-0 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                {favorites.length}
+              </span>
+            )}
+          </button>
+          
+          <div className="hidden sm:flex items-center gap-3 border border-gray-200 p-1 pr-3 rounded-full hover:shadow-md transition-shadow cursor-pointer bg-white">
+             <Icons.User className="w-5 h-5 text-gray-500" />
+             <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center text-white">
+                <span className="text-xs font-bold">אורח</span>
+             </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+
+  const renderHeroSearch = () => {
+    if (viewMode === 'favorites' || selectedZimmer) return null;
+    
+    return (
+      <div className="relative pt-16 pb-28 px-4 flex flex-col items-center justify-center text-center">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80" 
+            alt="Hero Background" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"></div>
+        </div>
+        
+        <div className="relative z-10 w-full max-w-5xl mx-auto">
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-6 drop-shadow-lg leading-tight">
+            החופשה הבאה שלכם <br className="hidden md:block" />
+            <span className="text-sky-400">מתחילה כאן.</span>
+          </h2>
+          <p className="text-lg md:text-xl text-gray-100 mb-10 font-medium drop-shadow-md">
+            וילות, סוויטות וצימרי יוקרה המובילים בישראל.
+          </p>
+          
+          <div className="bg-white p-2 rounded-full flex flex-col md:flex-row gap-2 shadow-2xl max-w-4xl mx-auto w-full">
+            <div className="flex-1 hover:bg-gray-50 rounded-full px-6 py-3 transition-colors text-right border-b md:border-b-0 md:border-l border-gray-200">
+              <label className="block text-xs font-bold text-gray-900 mb-0.5">איפה?</label>
+              <input 
+                type="text" 
+                placeholder="חיפוש יעד, אזור או שם..." 
+                className="w-full outline-none text-gray-600 bg-transparent text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex-1 hover:bg-gray-50 rounded-full px-6 py-3 transition-colors text-right border-b md:border-b-0 md:border-l border-gray-200 cursor-pointer">
+              <label className="block text-xs font-bold text-gray-900 mb-0.5">תאריכים</label>
+              <div className="text-gray-500 text-sm">הוסיפו תאריכים</div>
+            </div>
+            <div className="flex-1 hover:bg-gray-50 rounded-full px-6 py-3 transition-colors text-right flex items-center justify-between">
+              <div>
+                 <label className="block text-xs font-bold text-gray-900 mb-0.5">אורחים</label>
+                 <div className="text-gray-500 text-sm">{guests} אורחים</div>
+              </div>
+              <button className="bg-sky-500 hover:bg-sky-600 text-white p-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-sky-500/40">
+                <Icons.Search className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCategories = () => {
+    if (viewMode === 'favorites' || selectedZimmer) return null;
+    return (
+      <div className="border-b border-gray-200 bg-white sticky top-[73px] z-40 shadow-sm">
+        <div className="max-w-[1440px] mx-auto px-6 py-4 flex gap-8 overflow-x-auto custom-scrollbar">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`flex flex-col items-center gap-2 shrink-0 transition-colors ${activeCategory === cat.id ? 'text-slate-900 border-b-2 border-slate-900 pb-1' : 'text-gray-500 hover:text-gray-900 pb-1.5'}`}
+            >
+              <cat.icon className="w-6 h-6" />
+              <span className="text-sm font-semibold">{cat.name}</span>
+            </button>
+          ))}
+          
+          <div className="mr-auto pl-2 flex items-center">
+             <button 
+                onClick={() => setShowMobileFilters(true)}
+                className="flex items-center gap-2 border border-gray-300 rounded-xl px-4 py-2 hover:border-gray-900 transition-colors text-sm font-semibold text-slate-800"
+             >
+                <Icons.Filter className="w-4 h-4" />
+                <span>סינון מתקדם</span>
+             </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderGridCard = (zimmer) => {
+    const isFav = favorites.find(f => f.id === zimmer.id);
+    
+    return (
+      <div 
+        key={zimmer.id} 
+        onClick={() => setSelectedZimmer(zimmer)}
+        className="group cursor-pointer flex flex-col"
+      >
+        <div className="relative aspect-square w-full rounded-2xl overflow-hidden mb-3">
+          <img src={zimmer.image} alt={zimmer.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+          <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+          
+          {zimmer.isPopular && (
+             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full text-xs font-bold text-slate-800 shadow-sm border border-gray-100">
+               מומלץ האתר
+             </div>
+          )}
+          
+          <button 
+            onClick={(e) => toggleFavorite(zimmer, e)}
+            className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center transition-transform hover:scale-110 z-10"
+          >
+            <Icons.Heart 
+               filled={isFav} 
+               className={isFav ? "text-rose-500 w-7 h-7 drop-shadow-md" : "text-white/80 w-7 h-7 drop-shadow-md hover:text-white"} 
+            />
+          </button>
+        </div>
+        
+        <div className="flex justify-between items-start">
+          <div>
+             <h3 className="text-lg font-bold text-slate-900 leading-tight mb-0.5">{zimmer.name}</h3>
+             <p className="text-gray-500 text-sm mb-1">{zimmer.location}</p>
+             <p className="text-gray-400 text-sm mb-2">{zimmer.type} • עד {zimmer.guests} אורחים</p>
+             <div className="flex items-baseline gap-1 mt-1">
+                <span className="text-lg font-black text-slate-900">₪{zimmer.price}</span>
+                <span className="text-sm text-gray-600">לילה</span>
+             </div>
+          </div>
+          <div className="flex items-center gap-1 font-semibold text-sm">
+             <Icons.Star className="w-4 h-4 text-sky-500" />
+             <span>{zimmer.rating}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderGridView = () => (
+    <div className="max-w-[1440px] mx-auto px-6 py-10 w-full min-h-[50vh]">
+      {swipeQueue.length === 0 ? (
+        <div className="text-center py-20">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400"><Icons.Search className="w-8 h-8" /></div>
+          <h3 className="text-2xl font-bold text-slate-900 mb-2">לא מצאנו מקומות פנויים</h3>
+          <p className="text-gray-500 mb-6">נסו לשנות את התאריכים או להסיר סינונים</p>
+          <button onClick={clearAllFilters} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">
+            נקה את כל הסינונים
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12">
+          {swipeQueue.map(zimmer => renderGridCard(zimmer))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderDetailsView = () => {
+    const zimmer = selectedZimmer;
+    const isFav = favorites.find(f => f.id === zimmer.id);
+
+    return (
+      <div className="bg-white min-h-screen pb-20 animate-fade-in w-full">
+        <div className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-gray-200 py-4 px-6 flex justify-between items-center hidden md:flex">
+           <h2 className="text-xl font-bold text-slate-900">{zimmer.name}</h2>
+           <div className="flex gap-4 items-center">
+              <span className="font-bold text-lg">₪{zimmer.price} <span className="text-sm text-gray-500 font-normal">/ לילה</span></span>
+              <button className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2.5 px-8 rounded-xl transition-colors">
+                הזמן עכשיו
+              </button>
+           </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 md:px-8 pt-6">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-2">{zimmer.name}</h1>
+              <div className="flex items-center gap-4 text-sm font-semibold text-gray-700">
+                <span className="flex items-center gap-1"><Icons.Star className="w-4 h-4 text-sky-500"/> {zimmer.rating} ({zimmer.reviews} ביקורות)</span>
+                <span className="underline decoration-gray-400">{zimmer.location}</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => toggleFavorite(zimmer)} className="flex items-center gap-2 hover:bg-gray-100 px-4 py-2 rounded-xl transition-colors font-semibold underline decoration-transparent hover:decoration-gray-900">
+                 <Icons.Heart filled={isFav} className={`w-5 h-5 ${isFav ? 'text-rose-500' : 'text-gray-900'}`} />
+                 <span className="hidden md:inline">{isFav ? 'שמור' : 'שמור'}</span>
+              </button>
+              <button onClick={() => setSelectedZimmer(null)} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition-colors font-semibold text-slate-900">
+                 חזרה
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-2 h-[40vh] md:h-[60vh] rounded-3xl overflow-hidden mb-12">
+             <div className="md:col-span-2 row-span-2 h-full cursor-pointer group overflow-hidden">
+                <img src={zimmer.gallery[0]} alt="main" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+             </div>
+             {zimmer.gallery.slice(1, 5).map((img, i) => (
+                <div key={i} className="hidden md:block h-full cursor-pointer group overflow-hidden">
+                   <img src={img} alt={`gallery-${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                </div>
+             ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative">
+            <div className="lg:col-span-2 space-y-10">
+               <div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">{zimmer.type} מתארח על ידי צוות המקום</h2>
+                  <p className="text-gray-600 mb-6 font-medium">עד {zimmer.guests} אורחים • {zimmer.region}</p>
+                  <hr className="border-gray-200" />
+               </div>
+               
+               <div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4">על המקום</h3>
+                  <p className="text-lg text-gray-700 leading-relaxed">{zimmer.description}</p>
+               </div>
+
+               <hr className="border-gray-200" />
+
+               <div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-6">מה יש במקום?</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {zimmer.amenities.map((a, i) => (
+                      <div key={i} className="flex items-center gap-4 text-gray-800 font-medium text-lg">
+                        <Icons.Check className="w-6 h-6 text-sky-500" />
+                        {a}
+                      </div>
+                    ))}
+                  </div>
+               </div>
+            </div>
+
+            <div className="lg:col-span-1">
+               <div className="sticky top-32 bg-white rounded-3xl border border-gray-200 p-6 shadow-xl shadow-gray-200/50">
+                  <div className="flex items-baseline gap-1 mb-6">
+                     <span className="text-3xl font-black text-slate-900">₪{zimmer.price}</span>
+                     <span className="text-gray-600 font-medium">לילה</span>
+                  </div>
+                  
+                  <div className="border border-gray-300 rounded-xl mb-4 overflow-hidden">
+                     <div className="flex border-b border-gray-300">
+                        <div className="flex-1 p-3 border-l border-gray-300">
+                           <div className="text-[10px] font-bold text-gray-900 uppercase">הגעה</div>
+                           <div className="text-sm text-gray-500">הוסף תאריך</div>
+                        </div>
+                        <div className="flex-1 p-3">
+                           <div className="text-[10px] font-bold text-gray-900 uppercase">עזיבה</div>
+                           <div className="text-sm text-gray-500">הוסף תאריך</div>
+                        </div>
+                     </div>
+                     <div className="p-3">
+                        <div className="text-[10px] font-bold text-gray-900 uppercase">אורחים</div>
+                        <div className="text-sm text-gray-900">{guests} אורחים</div>
+                     </div>
+                  </div>
+                  
+                  <button className="w-full bg-sky-500 hover:bg-sky-600 active:scale-95 transition-all text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-sky-500/30 mb-4">
+                     הזמן עכשיו
+                  </button>
+                  <div className="text-center text-sm text-gray-500 font-medium mb-6">לא תחויב בשלב זה</div>
+                  
+                  <div className="space-y-4">
+                     <div className="flex justify-between text-gray-700 underline decoration-gray-300">
+                        <span>₪{zimmer.price} x 2 לילות</span>
+                        <span>₪{zimmer.price * 2}</span>
+                     </div>
+                     <div className="flex justify-between text-gray-700 underline decoration-gray-300">
+                        <span>דמי ניקיון</span>
+                        <span>₪200</span>
+                     </div>
+                     <hr className="border-gray-200" />
+                     <div className="flex justify-between font-black text-lg text-slate-900">
+                        <span>סה"כ</span>
+                        <span>₪{(zimmer.price * 2) + 200}</span>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFiltersContent = () => (
+    <div className="space-y-8 p-6">
+      <div>
+        <h4 className="font-bold text-lg text-slate-900 mb-4">אורחים</h4>
+        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+          <span className="text-gray-700">מבוגרים / ילדים</span>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setGuests(Math.max(1, guests - 1))} className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:border-gray-800 hover:text-gray-800 transition-colors">
+              <Icons.Minus className="w-4 h-4" />
+            </button>
+            <span className="w-4 text-center font-semibold text-lg">{guests}</span>
+            <button onClick={() => setGuests(guests + 1)} className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:border-gray-800 hover:text-gray-800 transition-colors">
+              <Icons.Plus className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Header / Navbar */}
-      <header className="sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-md border-b border-gray-800/80 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
-          
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl tracking-tighter shadow-lg shadow-purple-500/20">
-              DV
-            </div>
-            <div>
-              <span className="text-xl font-black bg-gradient-to-l from-white via-gray-100 to-purple-400 bg-clip-text text-transparent tracking-wide">DIGITAL VIBE</span>
-              <span className="block text-[9px] text-purple-400 font-bold uppercase tracking-widest -mt-1">שיווק דיגיטלי חכם</span>
-            </div>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-8">
-            <button 
-              onClick={() => { setActiveTab('home'); document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`text-sm font-medium transition-colors hover:text-purple-400 ${activeTab === 'home' ? 'text-purple-400' : 'text-gray-300'}`}
-            >
-              דף הבית
-            </button>
-            <button 
-              onClick={() => { setActiveTab('services'); document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`text-sm font-medium transition-colors hover:text-purple-400 ${activeTab === 'services' ? 'text-purple-400' : 'text-gray-300'}`}
-            >
-              שירותי המשרד
-            </button>
-            <button 
-              onClick={() => { setActiveTab('roi'); document.getElementById('roi')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`text-sm font-medium transition-colors hover:text-purple-400 ${activeTab === 'roi' ? 'text-purple-400' : 'text-gray-300'}`}
-            >
-              מחשבון ROI שיווקי
-            </button>
-            <button 
-              onClick={() => { setActiveTab('cases'); document.getElementById('cases')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`text-sm font-medium transition-colors hover:text-purple-400 ${activeTab === 'cases' ? 'text-purple-400' : 'text-gray-300'}`}
-            >
-              סיפורי הצלחה
-            </button>
-            <button 
-              onClick={() => { setActiveTab('about'); document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`text-sm font-medium transition-colors hover:text-purple-400 ${activeTab === 'about' ? 'text-purple-400' : 'text-gray-300'}`}
-            >
-              אודות
-            </button>
-            <button 
-              onClick={() => { setActiveTab('contact'); document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`text-sm font-medium transition-colors hover:text-purple-400 ${activeTab === 'contact' ? 'text-purple-400' : 'text-gray-300'}`}
-            >
-              צור קשר
-            </button>
-          </nav>
-
-          {/* Nav CTA button */}
-          <div className="hidden sm:flex items-center gap-4">
-            <button 
-              onClick={() => setIsAuditModalOpen(true)}
-              className="text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors border border-purple-500/30 hover:border-purple-500/60 bg-purple-500/5 hover:bg-purple-500/10 px-4 py-2.5 rounded-xl"
-            >
-              בדיקת אתר חינם 🚀
-            </button>
-            <button 
-              onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-gradient-to-l from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30"
-            >
-              שיחת ייעוץ חינם
-            </button>
-          </div>
-
-          {/* Mobile Menu Trigger */}
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <MenuIcon />
-          </button>
-
-        </div>
-      </header>
-
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-[#0B0F19]/98 flex flex-col justify-between p-6 border-l border-gray-800 animate-fadeIn">
-          <div>
-            <div className="flex justify-between items-center mb-10">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-black">DV</div>
-                <span className="text-lg font-black text-white">DIGITAL VIBE</span>
-              </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white">
-                <CloseIcon />
-              </button>
-            </div>
-            
-            <nav className="flex flex-col gap-5 text-lg font-bold">
-              <button 
-                onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' }); }}
-                className="text-right py-2 border-b border-gray-900 text-gray-200 hover:text-purple-400"
-              >
-                דף הבית
-              </button>
-              <button 
-                onClick={() => { setActiveTab('services'); setMobileMenuOpen(false); document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' }); }}
-                className="text-right py-2 border-b border-gray-900 text-gray-200 hover:text-purple-400"
-              >
-                שירותי המשרד
-              </button>
-              <button 
-                onClick={() => { setActiveTab('roi'); setMobileMenuOpen(false); document.getElementById('roi')?.scrollIntoView({ behavior: 'smooth' }); }}
-                className="text-right py-2 border-b border-gray-900 text-gray-200 hover:text-purple-400"
-              >
-                מחשבון ROI שיווקי
-              </button>
-              <button 
-                onClick={() => { setActiveTab('cases'); setMobileMenuOpen(false); document.getElementById('cases')?.scrollIntoView({ behavior: 'smooth' }); }}
-                className="text-right py-2 border-b border-gray-900 text-gray-200 hover:text-purple-400"
-              >
-                סיפורי הצלחה
-              </button>
-              <button 
-                onClick={() => { setActiveTab('about'); setMobileMenuOpen(false); document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); }}
-                className="text-right py-2 border-b border-gray-900 text-gray-200 hover:text-purple-400"
-              >
-                אודות
-              </button>
-              <button 
-                onClick={() => { setActiveTab('contact'); setMobileMenuOpen(false); document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}
-                className="text-right py-2 border-b border-gray-900 text-gray-200 hover:text-purple-400"
-              >
-                צור קשר
-              </button>
-            </nav>
-          </div>
-
-          <div className="flex flex-col gap-4 mt-12">
-            <button 
-              onClick={() => { setIsAuditModalOpen(true); setMobileMenuOpen(false); }}
-              className="w-full text-center font-bold text-purple-400 border border-purple-500/30 bg-purple-500/5 py-3 rounded-xl"
-            >
-              בדיקת אתר חינם 🚀
-            </button>
-            <button 
-              onClick={() => { setMobileMenuOpen(false); document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className="w-full text-center bg-gradient-to-l from-purple-600 to-indigo-600 text-white font-bold py-3 rounded-xl"
-            >
-              שיחת ייעוץ חינם
-            </button>
-            <div className="text-center text-xs text-gray-500 mt-4">
-              03-723-2339 | החשמונאים 91, תל אביב
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* HERO SECTION */}
-      <section id="home" className="relative pt-12 pb-24 md:pt-20 md:pb-32 overflow-hidden">
-        {/* Background ambient glow shapes */}
-        <div className="absolute top-1/4 left-10 w-[300px] h-[300px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-        <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
-            {/* Left/Main Column - Content */}
-            <div className="lg:col-span-7 text-right">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold mb-6">
-                <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
-                משרד בוטיק לשיווק דיגיטלי מבוסס ביצועים ודאטה
-              </div>
-
-              {/* Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.15] tracking-tight mb-6">
-                מייצרים לכם <br />
-                <span className="bg-gradient-to-l from-purple-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-                  תוצאות ומכירות,
-                </span> <br />
-                לא רק הבטחות.
-              </h1>
-
-              {/* Description */}
-              <p className="text-lg text-gray-300 mb-8 max-w-2xl leading-relaxed">
-                אנחנו ב-**Digital Vibe** מאמינים בשיווק פשוט, חכם ומדיד. מאז 2008 אנו מלווים מותגים ישראלים ובינלאומיים בבניית אסטרטגיות שיווק מנצחות, קמפיינים ממומנים שוברות שיאים, קידום אורגני יציב ופתרונות 360 מעלות.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-10">
-                <button 
-                  onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="bg-gradient-to-l from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-lg px-8 py-4 rounded-2xl transition-all shadow-lg shadow-purple-600/30 hover:-translate-y-0.5"
-                >
-                  בואו נדבר תכלס
-                </button>
-                <button 
-                  onClick={() => document.getElementById('roi')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="bg-gray-800/80 hover:bg-gray-800 text-gray-100 font-bold text-lg px-8 py-4 rounded-2xl transition-all border border-gray-700 hover:border-purple-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                >
-                  <TrendingUpIcon />
-                  חשבו את ה-ROI שלכם
-                </button>
-              </div>
-
-              {/* Features inline list */}
-              <div className="grid grid-cols-3 gap-4 border-t border-gray-800/80 pt-8 max-w-lg">
-                <div>
-                  <div className="text-2xl sm:text-3xl font-black text-white">16+</div>
-                  <div className="text-xs text-gray-400 mt-1">שנות ניסיון מוכח</div>
-                </div>
-                <div>
-                  <div className="text-2xl sm:text-3xl font-black text-white">₪140M+</div>
-                  <div className="text-xs text-gray-400 mt-1">ניהול תקציבי מדיה</div>
-                </div>
-                <div>
-                  <div className="text-2xl sm:text-3xl font-black text-white">320%</div>
-                  <div className="text-xs text-gray-400 mt-1">עלייה ממוצעת ב-ROI</div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Column - Visual representation */}
-            <div className="lg:col-span-5 relative mt-6 lg:mt-0">
-              <div className="relative mx-auto max-w-md lg:max-w-none">
-                {/* Visual Glassmorphic Dashboard Card */}
-                <div className="bg-gradient-to-br from-gray-900/90 to-slate-900/95 border border-gray-800/80 p-6 rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-md">
-                  
-                  {/* Decorative dots */}
-                  <div className="flex justify-between items-center border-b border-gray-800/80 pb-4 mb-6">
-                    <div className="flex gap-1.5">
-                      <span className="w-3 h-3 rounded-full bg-red-500/80"></span>
-                      <span className="w-3 h-3 rounded-full bg-yellow-500/80"></span>
-                      <span className="w-3 h-3 rounded-full bg-green-500/80"></span>
-                    </div>
-                    <span className="text-xs text-purple-400 font-mono">DigitalVibe_Live_ROAS.js</span>
-                  </div>
-
-                  {/* Stat Card Internal */}
-                  <div className="space-y-6">
-                    <div>
-                      <span className="text-xs text-gray-400 block uppercase tracking-wider mb-1">תקציב שיווק חודשי מנוהל</span>
-                      <div className="text-3xl font-black text-white flex items-baseline gap-1">
-                        <span>₪184,500</span>
-                        <span className="text-xs text-green-400 font-bold">+12% השבוע</span>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#080B12]/80 border border-gray-800/50 p-4 rounded-2xl">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-semibold text-gray-300">החזר השקעה (ROAS)</span>
-                        <span className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full font-bold">שיא חדש!</span>
-                      </div>
-                      <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">
-                        x5.84
-                      </div>
-                      
-                      {/* Interactive simulated mini graph */}
-                      <div className="h-16 flex items-end gap-1.5 mt-4">
-                        <div className="bg-purple-600/30 w-full h-8 rounded-md transition-all"></div>
-                        <div className="bg-purple-600/40 w-full h-10 rounded-md transition-all"></div>
-                        <div className="bg-purple-600/50 w-full h-12 rounded-md transition-all"></div>
-                        <div className="bg-purple-600/60 w-full h-9 rounded-md transition-all"></div>
-                        <div className="bg-gradient-to-t from-purple-600 to-cyan-400 w-full h-16 rounded-md animate-pulse"></div>
-                      </div>
-                    </div>
-
-                    {/* Active Campaign Box */}
-                    <div className="flex items-center justify-between border-t border-gray-800/80 pt-4">
-                      <div className="flex items-center gap-3">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                        <span className="text-xs text-gray-300">אופטימיזציית AI פעילה</span>
-                      </div>
-                      <button 
-                        onClick={() => document.getElementById('roi')?.scrollIntoView({ behavior: 'smooth' })}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
-                      >
-                        בדקו סימולציה &larr;
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Overlapping Absolute Elements */}
-                <div className="absolute -bottom-6 -right-6 bg-[#080B12] border border-gray-800/80 p-4 rounded-2xl shadow-xl flex items-center gap-3 max-w-[200px] hidden sm:flex">
-                  <div className="p-2.5 bg-cyan-500/10 text-cyan-400 rounded-xl">
-                    <TrendingUpIcon />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 block uppercase">המרה ממוצעת</span>
-                    <span className="text-base font-bold text-white">4.8% (עלייה)</span>
-                  </div>
-                </div>
-
-                <div className="absolute -top-6 -left-6 bg-[#080B12] border border-gray-800/80 p-4 rounded-2xl shadow-xl flex items-center gap-3 max-w-[200px] hidden sm:flex">
-                  <div className="p-2.5 bg-purple-500/10 text-purple-400 rounded-xl">
-                    <AwardIcon />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 block uppercase">שותף גוגל רשמי</span>
-                    <span className="text-xs font-bold text-white">Google Partner</span>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* TRUSTED BY LOGO MARQUEE */}
-      <section className="bg-[#080B12] border-y border-gray-800/60 py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-6">התוצאות מדברות בעד עצמן – מעל 250 מותגים שבטחו בנו</p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 hover:opacity-80 transition-opacity">
-            <span className="text-lg md:text-xl font-black text-gray-400 tracking-wide font-mono">FINANCE PRO</span>
-            <span className="text-lg md:text-xl font-black text-purple-400 tracking-wide font-mono">CASA FURNITURE</span>
-            <span className="text-lg md:text-xl font-black text-gray-400 tracking-wide font-mono">SYNERGY GLOBAL</span>
-            <span className="text-lg md:text-xl font-black text-cyan-400 tracking-wide font-mono">MEDICAL SPA</span>
-            <span className="text-lg md:text-xl font-black text-gray-400 tracking-wide font-mono">STYLE GROUP</span>
-          </div>
-        </div>
-      </section>
-
-      {/* THE SERVICES SECTION (סל השירותים) */}
-      <section id="services" className="py-24 relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-950/10 rounded-full blur-[120px] pointer-events-none"></div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="text-purple-400 font-bold text-sm uppercase tracking-wider mb-2">מגוון השירותים שלנו</div>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">פתרונות שיווק דיגיטלי מקצה לקצה</h2>
-            <p className="text-gray-400">
-              אנחנו לא מאמינים בפתרונות "פס ייצור". כל לקוח מקבל תמהיל אסטרטגי בהתאמה מדויקת ליעדים ולתקציב שלו. לחצו על כל שירות כדי לראות מה הוא כולל.
-            </p>
-          </div>
-
-          {/* Services Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service) => (
-              <div 
-                key={service.id}
-                className="group bg-gradient-to-b from-gray-900/40 to-slate-900/60 border border-gray-800/80 hover:border-purple-500/40 p-8 rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-950/20 cursor-pointer flex flex-col justify-between"
-                onClick={() => setSelectedService(service)}
-              >
-                <div>
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-tr ${service.color} flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform mb-6`}>
-                    {service.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">{service.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                    {service.shortDesc}
-                  </p>
-                </div>
-                <div className="text-xs font-bold text-purple-400 group-hover:text-purple-300 flex items-center gap-1">
-                  <span>קרא עוד אודות השירות</span>
-                  <span className="group-hover:-translate-x-1 transition-transform">&larr;</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick Consultation Ribbon */}
-          <div className="bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-cyan-950/20 border border-purple-500/20 p-8 md:p-10 rounded-3xl mt-16 text-center md:text-right flex flex-col md:flex-row justify-between items-center gap-6">
-            <div>
-              <h3 className="text-xl sm:text-2xl font-black text-white mb-2">לא בטוחים איזה סל שירותים מתאים לעסק שלכם?</h3>
-              <p className="text-gray-400 text-sm sm:text-base">אנחנו פה כדי לעזור לכם לבנות את המפה השיווקית הנכונה ביותר בשיחת ייעוץ קצרה וללא התחייבות.</p>
-            </div>
-            <button 
-              onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-3.5 rounded-xl transition-all shadow-lg whitespace-nowrap"
-            >
-              בואו נתאים לכם חבילה
-            </button>
-          </div>
-
-        </div>
-      </section>
-
-      {/* INTERACTIVE ROI CALCULATOR SECTION */}
-      <section id="roi" className="py-24 bg-[#080B12] relative border-y border-gray-800/40">
-        <div className="absolute top-10 left-10 w-[200px] h-[200px] bg-cyan-600/5 rounded-full blur-[80px] pointer-events-none"></div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-widest inline-block mb-3">כלי מבוסס דאטה</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">מחשבון ROI שיווקי אינטראקטיבי</h2>
-            <p className="text-gray-400 text-sm sm:text-base">
-              תפסיקו לנחש ותתחילו לחשב. הזינו את תקציב השיווק המשוער שלכם ואת נתוני הנוכחות הנוכחיים שלכם, ותראו מה קורה כשמבצעים אופטימיזציה מקצועית של **Digital Vibe**.
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-12 gap-8 items-start">
-            
-            {/* Left Column: Sliders & Controls (col-span-5) */}
-            <div className="lg:col-span-5 bg-gray-900/50 border border-gray-800/80 p-6 sm:p-8 rounded-3xl space-y-6">
-              <h3 className="text-lg font-bold text-white border-b border-gray-800 pb-3 mb-4">נתוני תקציב ויעדים</h3>
-              
-              {/* Slider 1: Marketing Budget */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-300 font-medium">תקציב שיווק חודשי</span>
-                  <span className="text-base font-black text-purple-400">₪{calcBudget.toLocaleString()}</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="5000" 
-                  max="100000" 
-                  step="2500" 
-                  value={calcBudget}
-                  onChange={(e) => setCalcBudget(+e.target.value)}
-                  className="w-full accent-purple-500"
-                />
-                <div className="flex justify-between text-[10px] text-gray-500">
-                  <span>₪5,000</span>
-                  <span>₪50,000</span>
-                  <span>₪100,000</span>
-                </div>
-              </div>
-
-              {/* Slider 2: CPC */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-300 font-medium">עלות ממוצעת לקליק (CPC)</span>
-                  <span className="text-base font-black text-purple-400">₪{calcCpc}</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="0.5" 
-                  max="20" 
-                  step="0.5" 
-                  value={calcCpc}
-                  onChange={(e) => setCalcCpc(+e.target.value)}
-                  className="w-full accent-purple-500"
-                />
-                <div className="flex justify-between text-[10px] text-gray-500">
-                  <span>₪0.5</span>
-                  <span>₪10</span>
-                  <span>₪20</span>
-                </div>
-              </div>
-
-              {/* Slider 3: Conversion Rate */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-300 font-medium">אחוז המרה באתר לקוח/ליד</span>
-                  <span className="text-base font-black text-purple-400">{calcConvRate}%</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="0.1" 
-                  max="10" 
-                  step="0.1" 
-                  value={calcConvRate}
-                  onChange={(e) => setCalcConvRate(+e.target.value)}
-                  className="w-full accent-purple-500"
-                />
-                <div className="flex justify-between text-[10px] text-gray-500">
-                  <span>0.1%</span>
-                  <span>5%</span>
-                  <span>10%</span>
-                </div>
-              </div>
-
-              {/* Slider 4: Avg Sale/LTV Value */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-300 font-medium">ערך ממוצע של רכישה / ליד חם</span>
-                  <span className="text-base font-black text-purple-400">₪{calcAvgValue}</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="100" 
-                  max="10000" 
-                  step="100" 
-                  value={calcAvgValue}
-                  onChange={(e) => setCalcAvgValue(+e.target.value)}
-                  className="w-full accent-purple-500"
-                />
-                <div className="flex justify-between text-[10px] text-gray-500">
-                  <span>₪100</span>
-                  <span>₪5,000</span>
-                  <span>₪10,000</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Column: Comparative Results Dashboard (col-span-7) */}
-            <div className="lg:col-span-7 grid gap-6">
-              
-              {/* Comparative Row */}
-              <div className="grid md:grid-cols-2 gap-6">
-                
-                {/* Standard Results Card */}
-                <div className="bg-slate-900/30 border border-gray-800 p-6 rounded-3xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 h-1.5 w-1/3 bg-gray-600"></div>
-                  <h4 className="text-sm font-bold text-gray-400 mb-4">שיווק רגיל (ממוצע שוק)</h4>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-xs text-gray-500 block">תנועה חודשית (קליקים)</span>
-                      <span className="text-xl font-bold text-white">{results.clicks.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-500 block">המרות משוערות</span>
-                      <span className="text-xl font-bold text-white">{results.conversions} המרות</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-500 block">הכנסה חודשית צפויה</span>
-                      <span className="text-2xl font-black text-white">₪{results.revenue.toLocaleString()}</span>
-                    </div>
-                    <div className="pt-2 border-t border-gray-800/50 flex justify-between items-center">
-                      <span className="text-xs text-gray-500">החזר השקעה (ROI)</span>
-                      <span className="text-sm font-bold text-red-400">{results.roi}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Digital Vibe Optimized Card */}
-                <div className="bg-gradient-to-br from-purple-950/40 to-indigo-950/40 border border-purple-500/40 p-6 rounded-3xl relative overflow-hidden shadow-xl shadow-purple-950/30">
-                  <div className="absolute top-0 right-0 h-1.5 w-full bg-gradient-to-r from-purple-500 to-cyan-400"></div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-sm font-bold text-purple-300">אופטימיזציית Digital Vibe</h4>
-                    <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 text-purple-200 rounded-full font-bold">משודרג +35%</span>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-xs text-gray-400 block">קליקים משודרגים (CPC נמוך יותר)</span>
-                      <span className="text-xl font-bold text-white">{results.vibe.clicks.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-400 block">המרות משודרגות (אחוז המרה משופר)</span>
-                      <span className="text-xl font-bold text-emerald-400">{results.vibe.conversions} המרות</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-400 block">הכנסה חודשית מוגדלת</span>
-                      <span className="text-2xl font-black text-emerald-400">₪{results.vibe.revenue.toLocaleString()}</span>
-                    </div>
-                    <div className="pt-2 border-t border-purple-900/60 flex justify-between items-center">
-                      <span className="text-xs text-gray-400">החזר השקעה (ROI)</span>
-                      <span className="text-base font-black text-cyan-400">{results.vibe.roi}%</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Incremental Improvement callout */}
-              <div className="bg-gradient-to-r from-emerald-950/30 to-slate-900/80 border border-emerald-500/20 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-right">
-                <div>
-                  <div className="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-1">תוספת רווח נקי פוטנציאלי בחודש</div>
-                  <div className="text-3xl font-black text-white">₪{results.vibe.revenueGain.toLocaleString()}</div>
-                  <div className="text-xs text-gray-400 mt-1">חישוב שמרני המבוסס על אופטימיזציית קמפיינים מקצועית של המומחים שלנו.</div>
-                </div>
-                <button 
-                  onClick={() => {
-                    const customMessage = `היי, חישבתי במחשבון ROI עם תקציב של ₪${calcBudget} ואשמח להבין איך להגיע להכנסה צפויה של ₪${results.vibe.revenue}.`;
-                    setContactForm({ ...contactForm, message: customMessage, budget: calcBudget });
-                    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-sm px-6 py-3.5 rounded-xl transition-all shadow-md whitespace-nowrap"
-                >
-                  לשריין שיחה למימוש הפוטנציאל
-                </button>
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* SUCCESS STORIES SECTION (סיפורי הצלחה) */}
-      <section id="cases" className="py-24 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="text-purple-400 font-bold text-sm uppercase tracking-wider mb-2">תוצאות מהשטח</div>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">הלקוחות שלנו גדלים - ובגדול</h2>
-            <p className="text-gray-400 text-sm sm:text-base">
-              עייפתם מדיבורים יפים? הנה הנתונים השקופים והאחוזים של מותגים ועסקים בדיוק כמוכם שעשו איתנו קפיצת מדרגה אמיתית.
-            </p>
-          </div>
-
-          {/* Filter tabs */}
-          <div className="flex flex-wrap justify-center gap-2 mb-12">
-            {[
-              { id: 'all', label: 'כל הפרויקטים' },
-              { id: 'ecommerce', label: 'אי-קומרס וחנויות' },
-              { id: 'b2b', label: 'B2B והייטק' },
-              { id: 'local', label: 'עסקים מקומיים ורפואה' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setCaseFilter(tab.id)}
-                className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all ${caseFilter === tab.id ? 'bg-purple-600 text-white' : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'}`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Cases Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {caseStudies
-              .filter(item => caseFilter === 'all' || item.category === caseFilter)
-              .map((study) => (
-                <div 
-                  key={study.id}
-                  className="bg-[#080B12]/80 border border-gray-800/80 p-6 sm:p-8 rounded-3xl flex flex-col justify-between hover:border-purple-500/20 transition-all duration-300"
-                >
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[11px] font-bold rounded-lg">
-                        {study.tag}
-                      </span>
-                      <span className="text-xs text-gray-500 font-medium">קייס סטאדי</span>
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2">{study.company}</h3>
-                    <p className="text-sm text-purple-300 font-semibold mb-3">{study.achievement}</p>
-                    <p className="text-xs text-gray-400 leading-relaxed mb-6">{study.details}</p>
-                  </div>
-
-                  <div className="border-t border-gray-800/60 pt-4 mt-auto flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] text-gray-500 block uppercase">תוצאה מרכזית</span>
-                      <span className="text-lg font-black text-emerald-400">{study.stats.primary}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-gray-500 block uppercase">החזר השקעה</span>
-                      <span className="text-sm font-bold text-cyan-400">{study.stats.secondary}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* ABOUT US SECTION (מי אנחנו) */}
-      <section id="about" className="py-24 bg-[#080B12] relative border-t border-gray-800/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Visual elements */}
+      <div>
+        <h4 className="font-bold text-lg text-slate-900 mb-4">טווח מחירים (ללילה)</h4>
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label className="text-xs text-gray-500 mb-1 block">מנימום</label>
             <div className="relative">
-              <div className="aspect-video w-full rounded-3xl overflow-hidden bg-gradient-to-tr from-purple-900 to-indigo-950 p-1">
-                <div className="w-full h-full bg-[#0B0F19] rounded-[22px] p-6 flex flex-col justify-between relative overflow-hidden">
-                  
-                  {/* Neon grid pattern in back */}
-                  <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none"></div>
-
-                  <div className="relative z-10 flex justify-between items-center">
-                    <span className="text-xs font-mono text-purple-400">// אודות דיגיטל וייב</span>
-                    <span className="text-xs px-2.5 py-1 bg-emerald-500/20 text-emerald-400 rounded-full font-bold">18+ אנשי מקצוע</span>
-                  </div>
-
-                  <div className="relative z-10 my-8">
-                    <div className="text-2xl font-black text-white mb-3">שומרים על יציבות בעידן דיגיטלי משתנה</div>
-                    <p className="text-xs text-gray-400 leading-relaxed max-w-md">
-                      החל משינויי האלגוריתמים של גוגל ומטא, ועד לפריצת הבינה המלאכותית (AI) - הצוות שלנו תמיד נמצא צעד אחד קדימה כדי להבטיח שהלקוחות שלנו מובילים.
-                    </p>
-                  </div>
-
-                  <div className="relative z-10 flex gap-4 border-t border-gray-800/80 pt-4">
-                    <div className="flex -space-x-2 overflow-hidden">
-                      <span className="inline-block h-8 w-8 rounded-full bg-purple-600 text-center leading-8 text-xs font-bold text-white border-2 border-[#0B0F19]">רכ</span>
-                      <span className="inline-block h-8 w-8 rounded-full bg-cyan-600 text-center leading-8 text-xs font-bold text-white border-2 border-[#0B0F19]">עב</span>
-                      <span className="inline-block h-8 w-8 rounded-full bg-indigo-600 text-center leading-8 text-xs font-bold text-white border-2 border-[#0B0F19]">אנ</span>
-                    </div>
-                    <span className="text-xs text-gray-300 self-center">צוות הניהול המקצועי תמיד זמין לשירותכם</span>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Float box */}
-              <div className="absolute -bottom-6 -left-4 bg-[#0B0F19] border border-gray-800 p-5 rounded-2xl shadow-xl max-w-xs hidden sm:block">
-                <div className="text-lg font-bold text-white mb-1">נוסדנו בשנת 2008</div>
-                <p className="text-xs text-gray-400">על ידי רמי כהן (מנכ"ל), במטרה להוביל שיווק נטול פשרות מבוסס נתונים בלבד.</p>
-              </div>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
+              <input type="number" value={priceRange.min} onChange={e => setPriceRange({...priceRange, min: +e.target.value})} className="w-full border border-gray-300 rounded-xl py-3 pr-8 pl-3 outline-none focus:border-slate-900" />
             </div>
-
-            {/* Narrative */}
-            <div className="text-right">
-              <span className="text-purple-400 font-bold text-sm uppercase tracking-wider mb-2">מי אנחנו?</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-white mb-6">משרד פרסום שהוא שותף עסקי לגידול שלכם</h2>
-              
-              <div className="space-y-4 text-gray-300 text-sm sm:text-base leading-relaxed">
-                <p>
-                  סוכנות **Digital Vibe (דיגיטל וייב בע"מ)** הוקמה בשנת 2008 מתוך חזון לפשט את עולמות השיווק והקידום המסועפים ולהנגיש אותם לעסקים כמודל מוצלח של השקעה והחזר.
-                </p>
-                <p>
-                  אנו לא מאמינים בדיבורים באוויר, דוחות מעורפלים או הבטחות חסרות אחיזה. אנחנו שמים את הדגש על **אסטרטגיה מותאמת אישית, קריאייטיב חד ומדידת נתונים בלתי מתפשרת**.
-                </p>
-                <p>
-                  הצוות שלנו מורכב ממקצוענים מובילים בתחומי ה-SEO, קמפיינרים מוסמכים בגוגל ומטא, מומחי נייטיב (טאבולה/אאוטבריין), מעצבים ומנהלי תוכן שחיים ונושמים את עולמות הדיגיטל 24/7.
-                </p>
-              </div>
-
-              {/* Three Value Pillars */}
-              <div className="grid sm:grid-cols-3 gap-4 mt-8 pt-8 border-t border-gray-800">
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">🤝</div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white">ליווי אישי</h4>
-                    <span className="text-[10px] text-gray-400">חשיבה משותפת וקשר ישיר ומהיר</span>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">📊</div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white">100% שקיפות</h4>
-                    <span className="text-[10px] text-gray-400">גישה מלאה לדוחות ולחשבונות</span>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center shrink-0">🎯</div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white">חתירה לתוצאות</h4>
-                    <span className="text-[10px] text-gray-400">ממוקדי המרות ומכירות בפועל</span>
-                  </div>
-                </div>
-              </div>
-
+          </div>
+          <div className="flex-1">
+             <label className="text-xs text-gray-500 mb-1 block">מקסימום</label>
+             <div className="relative">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
+              <input type="number" value={priceRange.max} onChange={e => setPriceRange({...priceRange, max: +e.target.value})} className="w-full border border-gray-300 rounded-xl py-3 pr-8 pl-3 outline-none focus:border-slate-900" />
             </div>
-
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* TESTIMONIALS SECTION (לקוחות ממליצים) */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div>
+        <h4 className="font-bold text-lg text-slate-900 mb-4">סוג נכס</h4>
+        <div className="grid grid-cols-2 gap-3">
+          {FILTER_OPTIONS.types.map(type => (
+            <label key={type} className="flex gap-3 cursor-pointer group items-center">
+              <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${selectedTypes.includes(type) ? 'bg-slate-900 border-slate-900 text-white' : 'border-gray-300'}`}>
+                {selectedTypes.includes(type) && <Icons.Check className="w-4 h-4" />}
+              </div>
+              <input type="checkbox" className="hidden" checked={selectedTypes.includes(type)} onChange={() => {
+                setSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
+              }}/>
+              <span className="text-gray-700">{type}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-bold text-lg text-slate-900 mb-4">מתקנים פופולריים</h4>
+        <div className="grid grid-cols-2 gap-3">
+          {FILTER_OPTIONS.amenities.map(amenity => (
+            <label key={amenity} className="flex gap-3 cursor-pointer group items-center">
+              <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${selectedAmenities.includes(amenity) ? 'bg-slate-900 border-slate-900 text-white' : 'border-gray-300'}`}>
+                {selectedAmenities.includes(amenity) && <Icons.Check className="w-4 h-4" />}
+              </div>
+              <input type="checkbox" className="hidden" checked={selectedAmenities.includes(amenity)} onChange={() => {
+                setSelectedAmenities(prev => prev.includes(amenity) ? prev.filter(a => a !== amenity) : [...prev, amenity]);
+              }}/>
+              <span className="text-gray-700">{amenity}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMobileFiltersModal = () => {
+    if (!showMobileFilters) return null;
+    return (
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end transition-opacity">
+        <div className="bg-white w-full rounded-t-3xl h-[85vh] flex flex-col animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
+          <div className="flex justify-between items-center p-6 border-b border-gray-100">
+            <button onClick={() => setShowMobileFilters(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <Icons.X className="w-5 h-5" />
+            </button>
+            <h3 className="font-bold text-lg text-slate-900">סינון מתקדם</h3>
+            <button onClick={clearAllFilters} className="text-sm font-semibold underline text-slate-900">
+              נקה הכל
+            </button>
+          </div>
           
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-purple-400 font-bold text-sm uppercase tracking-wider block mb-2">חוות דעת ופידבקים</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">מה הלקוחות שלנו אומרים עלינו?</h2>
-            <p className="text-gray-400">
-              אין מחמאה גדולה יותר מלקוחות הממשיכים איתנו שנה אחר שנה וממליצים עלינו הלאה בגאווה.
-            </p>
+          <div className="overflow-y-auto flex-1 custom-scrollbar">
+            {renderFiltersContent()}
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((t, idx) => (
-              <div key={idx} className="bg-gradient-to-b from-gray-900/40 to-slate-900/60 border border-gray-800/80 p-8 rounded-3xl relative flex flex-col justify-between">
-                
-                {/* Quote sign */}
-                <span className="absolute top-4 left-6 text-6xl text-purple-500/10 font-serif pointer-events-none">”</span>
-
-                <p className="text-gray-300 text-sm leading-relaxed mb-6 italic relative z-10">
-                  "{t.text}"
-                </p>
-
-                <div className="flex items-center gap-3 pt-4 border-t border-gray-800/60 mt-auto">
-                  <div className="w-10 h-10 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-lg">
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">{t.name}</h4>
-                    <span className="text-xs text-gray-400">{t.role}</span>
-                  </div>
-                </div>
-
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* AUDIT CALLOUT LEAD MAGNET (בדיקת אתר חינם) */}
-      <section className="bg-gradient-to-r from-purple-950/20 via-[#0B0F19] to-indigo-950/20 py-16 border-y border-gray-800/40">
-        <div className="max-w-5xl mx-auto px-4 text-center">
-          <h2 className="text-2xl sm:text-3xl font-black text-white mb-4">רוצים לדעת איפה האתר והפרסום שלכם עומדים?</h2>
-          <p className="text-gray-400 text-sm sm:text-base max-w-2xl mx-auto mb-8">
-            קבלו בדיקה ואופטימיזציה מקצועית חינמית לחלוטין של מומחי השיווק שלנו. נסרוק את האתר, נבדוק את הנוכחות שלכם בגוגל ונחזור אליכם עם תובנות שוות זהב.
-          </p>
-          <button 
-            onClick={() => setIsAuditModalOpen(true)}
-            className="bg-gradient-to-l from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg animate-pulse hover:animate-none"
-          >
-            שלחו לי אופטימיזציה חינם לאתר &larr;
-          </button>
-        </div>
-      </section>
-
-      {/* CONTACT FORM SECTION (צור קשר) */}
-      <section id="contact" className="py-24 relative overflow-hidden">
-        <div className="absolute top-1/4 right-10 w-[300px] h-[300px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-12 gap-12 lg:gap-8">
-            
-            {/* Contact Information (col-span-5) */}
-            <div className="lg:col-span-5 text-right flex flex-col justify-between">
-              <div>
-                <span className="text-purple-400 font-bold text-sm uppercase tracking-wider mb-2">בואו נצא לדרך</span>
-                <h2 className="text-3xl sm:text-4xl font-black text-white mb-6">מחכים לשמוע על הפרויקט הבא שלכם</h2>
-                <p className="text-gray-300 text-sm sm:text-base leading-relaxed mb-8">
-                  נשמח להכיר את העסק שלכם, לשמוע על היעדים והתקציבים שלכם, ולהכין לכם תוכנית עבודה מפורטת וחסרת פשרות להגדלת המכירות.
-                </p>
-
-                <div className="space-y-6">
-                  
-                  {/* Item 1 */}
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-purple-600/10 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20">
-                      <PhoneIcon />
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-400 block">התקשרו אלינו ישירות</span>
-                      <a href="tel:03-723-2339" className="text-lg font-bold text-white hover:text-purple-400 transition-colors">03-723-2339</a>
-                    </div>
-                  </div>
-
-                  {/* Item 2 */}
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-cyan-600/10 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/20">
-                      <MailIcon />
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-400 block">שלחו לנו מייל שאלות</span>
-                      <a href="mailto:info@digitalvibe.co.il" className="text-lg font-bold text-white hover:text-purple-400 transition-colors">info@digitalvibe.co.il</a>
-                    </div>
-                  </div>
-
-                  {/* Item 3 */}
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-pink-600/10 text-pink-400 flex items-center justify-center shrink-0 border border-pink-500/20">
-                      <MapPinIcon />
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-400 block">בקרו במשרדי החברה</span>
-                      <span className="text-lg font-bold text-white">החשמונאים 91, תל אביב-יפו</span>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Badges/Partners */}
-              <div className="border-t border-gray-800/80 pt-8 mt-12 hidden lg:block">
-                <span className="text-xs text-gray-400 font-bold block mb-3">שותפי שיווק מוסמכים</span>
-                <div className="flex gap-4 items-center opacity-70">
-                  <span className="text-xs font-mono text-white tracking-widest bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-lg">GOOGLE PARTNER</span>
-                  <span className="text-xs font-mono text-white tracking-widest bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-lg">META BUSINESS PARTNER</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Lead Form Component (col-span-7) */}
-            <div className="lg:col-span-7">
-              <div className="bg-gray-900/50 border border-gray-800/80 p-6 sm:p-10 rounded-3xl relative overflow-hidden backdrop-blur-sm">
-                
-                {contactSubmitted ? (
-                  <div className="text-center py-12 space-y-6">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto text-3xl border border-emerald-500/20 animate-bounce">
-                      ✓
-                    </div>
-                    <h3 className="text-2xl font-black text-white">תודה רבה! הפנייה התקבלה בהצלחה</h3>
-                    <p className="text-gray-300 max-w-md mx-auto text-sm sm:text-base">
-                      הפרטים שלכם נרשמו במערכת **Digital Vibe**. מומחה שיווק מטעמנו ינתח את האתר ויחזור אליכם לשיחת ייעוץ אישית תוך מקסימום 2 שעות עבודה.
-                    </p>
-                    <button 
-                      onClick={() => setContactSubmitted(false)}
-                      className="text-xs text-purple-400 hover:text-purple-300 font-bold underline"
-                    >
-                      שליחת פנייה נוספת
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleContactSubmit} className="space-y-6 text-right">
-                    
-                    <div className="grid sm:grid-cols-2 gap-6">
-                      
-                      {/* Name input */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-300 block">שם מלא *</label>
-                        <input 
-                          type="text" 
-                          required
-                          placeholder="ישראל ישראלי" 
-                          value={contactForm.name}
-                          onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                          className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 rounded-xl px-4 py-3 text-sm text-gray-100 outline-none transition-all text-right"
-                        />
-                      </div>
-
-                      {/* Phone input */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-300 block">טלפון נייד *</label>
-                        <input 
-                          type="tel" 
-                          required
-                          placeholder="050-1234567" 
-                          value={contactForm.phone}
-                          onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-                          className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 rounded-xl px-4 py-3 text-sm text-gray-100 outline-none transition-all text-right"
-                        />
-                      </div>
-
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-6">
-                      
-                      {/* Email input */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-300 block">כתובת אימייל *</label>
-                        <input 
-                          type="email" 
-                          required
-                          placeholder="name@company.com" 
-                          value={contactForm.email}
-                          onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                          className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 rounded-xl px-4 py-3 text-sm text-gray-100 outline-none transition-all text-right"
-                        />
-                      </div>
-
-                      {/* Company Name */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-300 block">שם החברה / האתר</label>
-                        <input 
-                          type="text" 
-                          placeholder="שם העסק שלך" 
-                          value={contactForm.company}
-                          onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })}
-                          className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 rounded-xl px-4 py-3 text-sm text-gray-100 outline-none transition-all text-right"
-                        />
-                      </div>
-
-                    </div>
-
-                    {/* Service Type */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-300 block">השירות העיקרי שמעניין אתכם</label>
-                      <select 
-                        value={contactForm.service}
-                        onChange={(e) => setContactForm({ ...contactForm, service: e.target.value })}
-                        className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 rounded-xl px-4 py-3 text-sm text-gray-100 outline-none transition-all text-right appearance-none"
-                      >
-                        <option value="קידום ממומן">פרסום ממומן בגוגל ומדיה חברתית (PPC)</option>
-                        <option value="קידום אורגני">קידום אורגני בגוגל (SEO)</option>
-                        <option value="ניהול רשתות">ניהול רשתות חברתיות 360 (SMO)</option>
-                        <option value="טאבולה">פרסום בטאבולה ואאוטבריין (Native)</option>
-                        <option value="ניהול אתרים">ניהול ואופטימיזציית אתרים 360</option>
-                        <option value="שיווק משולב">אסטרטגיה שיווקית משולבת</option>
-                      </select>
-                    </div>
-
-                    {/* Budget slider inline */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs font-bold text-gray-300">תקציב פרסום חודשי משוער</label>
-                        <span className="text-sm font-black text-purple-400">₪{contactForm.budget.toLocaleString()} +</span>
-                      </div>
-                      <input 
-                        type="range" 
-                        min="5000" 
-                        max="100000" 
-                        step="5000" 
-                        value={contactForm.budget}
-                        onChange={(e) => setContactForm({ ...contactForm, budget: +e.target.value })}
-                        className="w-full accent-purple-500"
-                      />
-                    </div>
-
-                    {/* Message */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-300 block">איך נוכל לעזור לכם? (פירוט קצר)</label>
-                      <textarea 
-                        rows="3" 
-                        placeholder="ספרו לנו קצת על העסק, הקהל ואיזה תוצאות תרצו להשיג..." 
-                        value={contactForm.message}
-                        onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                        className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 rounded-xl px-4 py-3 text-sm text-gray-100 outline-none transition-all text-right resize-none"
-                      />
-                    </div>
-
-                    <button 
-                      type="submit"
-                      className="w-full bg-gradient-to-l from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-base py-4 rounded-xl transition-all shadow-lg shadow-purple-600/20 hover:-translate-y-0.5"
-                    >
-                      קבלו שיחת אפיון ואופטימיזציה חינם
-                    </button>
-
-                  </form>
-                )}
-
-              </div>
-            </div>
-
+          
+          <div className="p-6 border-t border-gray-200 bg-white">
+            <button 
+              onClick={() => setShowMobileFilters(false)}
+              className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:bg-slate-800 transition-colors"
+            >
+              הצג {swipeQueue.length} מקומות
+            </button>
           </div>
         </div>
-      </section>
+      </div>
+    );
+  };
 
-      {/* FOOTER */}
-      <footer className="bg-[#080B12] border-t border-gray-800/80 pt-16 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-12 gap-12 pb-12 border-b border-gray-800/60">
-            
-            {/* Column 1: Info (col-span-5) */}
-            <div className="md:col-span-5 text-right space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-black">DV</div>
-                <span className="text-lg font-black text-white">DIGITAL VIBE</span>
-              </div>
-              <p className="text-xs text-gray-400 leading-relaxed max-w-sm">
-                דיגיטל וייב בע"מ - משרד פרסום ושיווק אונליין מוביל בישראל מאז 2008. שירותי קידום ממומן, קידום אורגני, נייטיב ואופטימיזציה מתקדמת מבוססת ביצועים ו-ROAS חסר פשרות.
-              </p>
-              <div className="text-xs text-gray-500">
-                © {new Date().getFullYear()} דיגיטל וייב שיווק דיגיטלי בע"מ. כל הזכויות שמורות. ח.פ 516604352.
-              </div>
+  const renderFooter = () => {
+    if (selectedZimmer) return null;
+    return (
+      <footer className="bg-slate-50 border-t border-gray-200 py-12 mt-auto">
+         <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+               <h4 className="font-bold text-slate-900 mb-4">תמיכה</h4>
+               <ul className="space-y-3 text-gray-600 text-sm font-medium">
+                  <li><a href="#" className="hover:underline">מרכז העזרה</a></li>
+                  <li><a href="#" className="hover:underline">אפשרויות ביטול</a></li>
+                  <li><a href="#" className="hover:underline">נגישות</a></li>
+               </ul>
             </div>
-
-            {/* Column 2: Links (col-span-3) */}
-            <div className="md:col-span-3 text-right">
-              <h4 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">שירותי המשרד</h4>
-              <ul className="space-y-2.5 text-xs text-gray-400">
-                <li><button onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-purple-400 transition-colors">קידום אורגני בגוגל (SEO)</button></li>
-                <li><button onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-purple-400 transition-colors">פרסום ממומן במטא וגוגל (PPC)</button></li>
-                <li><button onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-purple-400 transition-colors">ניהול רשתות חברתיות (SMO)</button></li>
-                <li><button onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-purple-400 transition-colors">פרסום בטאבולה ואאוטבריין</button></li>
-                <li><button onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-purple-400 transition-colors">ניהול ואופטימיזציית אתרים 360</button></li>
-              </ul>
+            <div>
+               <h4 className="font-bold text-slate-900 mb-4">אירוח</h4>
+               <ul className="space-y-3 text-gray-600 text-sm font-medium">
+                  <li><a href="#" className="hover:underline">הוסף את הצימר שלך</a></li>
+                  <li><a href="#" className="hover:underline">קהילת המארחים</a></li>
+                  <li><a href="#" className="hover:underline">הגנה על מארחים</a></li>
+               </ul>
             </div>
-
-            {/* Column 3: Navigation (col-span-4) */}
-            <div className="md:col-span-4 text-right">
-              <h4 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">צור קשר וניווט</h4>
-              <ul className="space-y-3 text-xs text-gray-400">
-                <li><span className="block text-gray-500">כתובת משרדים:</span> החשמונאים 91, תל אביב-יפו</li>
-                <li><span className="block text-gray-500">טלפון ישיר:</span> <a href="tel:03-723-2339" className="hover:text-purple-400 text-white font-bold">03-723-2339</a></li>
-                <li><span className="block text-gray-500">דואר אלקטרוני:</span> <a href="mailto:info@digitalvibe.co.il" className="hover:text-purple-400">info@digitalvibe.co.il</a></li>
-                <li><span className="block text-gray-500">מדיניות פרטיות:</span> <a href="#" className="hover:underline text-[10px]">מדיניות פרטיות ואבטחת מידע</a></li>
-              </ul>
+            <div>
+               <h4 className="font-bold text-slate-900 mb-4">אודות צימרFinder</h4>
+               <ul className="space-y-3 text-gray-600 text-sm font-medium">
+                  <li><a href="#" className="hover:underline">חדשות</a></li>
+                  <li><a href="#" className="hover:underline">קריירה</a></li>
+                  <li><a href="#" className="hover:underline">משקיעים</a></li>
+               </ul>
             </div>
-
-          </div>
-
-          <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-xs text-gray-500">
-              נבנה עבור השראה ועיצוב דיגיטל וייב בע"מ. מבוסס על אסטרטגיה חכמה.
+            <div>
+               <div className="flex items-center gap-2 mb-4 text-slate-900">
+                 <Icons.Home className="w-6 h-6 text-sky-500" />
+                 <h1 className="text-xl font-black">צימרFinder</h1>
+               </div>
+               <p className="text-gray-500 text-sm mb-4">הפלטפורמה המובילה בישראל להזמנת חופשות יוקרה, וילות וצימרים.</p>
             </div>
+         </div>
+         <div className="max-w-[1440px] mx-auto px-6 mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500 font-medium">
+            <div>© 2024 ZimmerFinder, Inc. כל הזכויות שמורות.</div>
             <div className="flex gap-4">
-              <a href="#" className="w-8 h-8 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500 transition-all text-sm">f</a>
-              <a href="#" className="w-8 h-8 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500 transition-all text-sm">in</a>
-              <a href="#" className="w-8 h-8 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500 transition-all text-sm">yt</a>
+               <a href="#" className="hover:underline">פרטיות</a>
+               <a href="#" className="hover:underline">תנאים</a>
+               <a href="#" className="hover:underline">מפת האתר</a>
             </div>
-          </div>
-
-        </div>
+         </div>
       </footer>
+    );
+  };
 
-      {/* SERVICE DETAILS MODAL (פופ-אפ שירותים) */}
-      {selectedService && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#080B12]/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#0B0F19] border border-gray-800/80 p-6 sm:p-8 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto text-right relative shadow-2xl shadow-purple-950/20">
-            
-            <button 
-              onClick={() => setSelectedService(null)}
-              className="absolute top-4 left-4 p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-900 transition-colors"
-            >
-              <CloseIcon />
-            </button>
-
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-purple-600/20 flex items-center justify-center text-2xl border border-purple-500/20">
-                {selectedService.icon}
+  return (
+    <div dir="rtl" className="min-h-screen bg-white font-hebrew text-right flex flex-col">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap');
+        .font-hebrew { font-family: 'Assistant', sans-serif; }
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+        
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+      `}</style>
+      
+      {!selectedZimmer && renderHeader()}
+      {!selectedZimmer && renderHeroSearch()}
+      {!selectedZimmer && renderCategories()}
+      
+      <main className="flex-1 flex flex-col items-center w-full bg-white">
+        {selectedZimmer ? renderDetailsView() : (
+          <>
+            {viewMode === 'grid' && renderGridView()}
+            {viewMode === 'swipe' && (
+              <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gray-50 min-h-[calc(100vh-400px)] overflow-hidden w-full relative">
+                <div className="relative w-full max-w-sm h-[560px] mt-10">
+                  {currentSwipeIndex >= swipeQueue.length ? (
+                    <div className="absolute inset-0 bg-white rounded-3xl shadow-xl flex flex-col items-center justify-center p-8 text-center">
+                      <Icons.Check className="w-16 h-16 text-emerald-500 mb-4" />
+                      <h3 className="text-2xl font-bold mb-2">ראיתם הכל!</h3>
+                      <button onClick={clearAllFilters} className="mt-4 text-sky-500 font-bold">נקה סינונים</button>
+                    </div>
+                  ) : (
+                    swipeQueue.slice(currentSwipeIndex, currentSwipeIndex + 3).reverse().map((zimmer, idx, arr) => {
+                      const isTop = idx === arr.length - 1;
+                      const stackIndex = arr.length - 1 - idx; 
+                      return (
+                        <div key={zimmer.id} className="absolute inset-0 transition-transform duration-300 ease-out"
+                          style={{ transform: isTop ? 'none' : `scale(${1 - stackIndex * 0.05}) translateY(${stackIndex * 15}px)`, zIndex: isTop ? 10 : 10 - stackIndex }}>
+                          <SwipeCard zimmer={zimmer} active={isTop} onSwipe={handleSwipe} />
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-white">{selectedService.title}</h3>
-            </div>
-
-            <p className="text-gray-300 text-sm leading-relaxed mb-6">
-              {selectedService.detailedDesc}
-            </p>
-
-            <h4 className="text-sm font-bold text-white mb-3">מה כוללת מעטפת העבודה שלנו:</h4>
-            <ul className="space-y-3 mb-8">
-              {selectedService.bullets.map((bullet, idx) => (
-                <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-gray-400">
-                  <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20 mt-0.5">
-                    <CheckIcon />
-                  </span>
-                  <span>{bullet}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="flex flex-col sm:flex-row gap-4 border-t border-gray-800/80 pt-6">
-              <button 
-                onClick={() => {
-                  setContactForm({ ...contactForm, service: selectedService.title });
-                  setSelectedService(null);
-                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full bg-gradient-to-l from-purple-600 to-indigo-600 text-white font-black py-3.5 rounded-xl transition-all text-center text-sm"
-              >
-                אני רוצה להתייעץ על שירות זה
-              </button>
-              <button 
-                onClick={() => setSelectedService(null)}
-                className="w-full bg-gray-900 border border-gray-800 text-gray-300 font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-colors text-sm"
-              >
-                סגור חלון
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* LEAD MAGNET / FREE AUDIT MODAL (פופ-אפ בדיקה חינם) */}
-      {isAuditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#080B12]/85 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#0B0F19] border border-purple-500/30 p-6 sm:p-8 rounded-3xl max-w-lg w-full text-right relative shadow-2xl shadow-purple-950/30">
-            
-            <button 
-              onClick={() => setIsAuditModalOpen(false)}
-              className="absolute top-4 left-4 p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-900 transition-colors"
-            >
-              <CloseIcon />
-            </button>
-
-            {auditSubmitted ? (
-              <div className="text-center py-8 space-y-4">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto text-2xl border border-emerald-500/20">
-                  ✓
-                </div>
-                <h3 className="text-xl font-bold text-white">הבקשה לבדיקה נרשמה בהצלחה!</h3>
-                <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                  אנחנו כבר מתחילים לסרוק את האתר {auditForm.website || ''} ולנתח את הנוכחות שלכם. נחזור אליכם בהקדם האפשרי עם תוצאות מדויקות.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleAuditSubmit} className="space-y-5 text-right">
-                
-                <div>
-                  <span className="text-[10px] bg-purple-500/20 border border-purple-500/30 text-purple-300 px-2 py-1 rounded-md font-black uppercase tracking-wider mb-2 inline-block">מתנה ללא התחייבות 🎁</span>
-                  <h3 className="text-xl sm:text-2xl font-black text-white">קבלו סריקה ואנליזה מלאה לאתר בחינם</h3>
-                  <p className="text-xs text-gray-400 mt-1">
-                    המומחים שלנו ינתחו את האתר שלכם ברמת מהירות, תגיות SEO, אופטימיזציית מובייל ונתחי שוק, ויחזרו אליכם עם מפת דרכים לשיפור ללא כל עלות.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-gray-300 block">שם מלא *</label>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="השם שלכם" 
-                      value={auditForm.name}
-                      onChange={(e) => setAuditForm({ ...auditForm, name: e.target.value })}
-                      className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 rounded-xl px-4 py-2.5 text-xs text-gray-100 outline-none transition-all text-right"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-gray-300 block">טלפון נייד *</label>
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="05x-xxxxxxx" 
-                      value={auditForm.phone}
-                      onChange={(e) => setAuditForm({ ...auditForm, phone: e.target.value })}
-                      className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 rounded-xl px-4 py-2.5 text-xs text-gray-100 outline-none transition-all text-right"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-gray-300 block">כתובת אתר אינטרנט (לא חובה)</label>
-                    <input 
-                      type="text" 
-                      placeholder="www.mycompany.co.il" 
-                      value={auditForm.website}
-                      onChange={(e) => setAuditForm({ ...auditForm, website: e.target.value })}
-                      className="w-full bg-[#080B12] border border-gray-800 focus:border-purple-500/50 rounded-xl px-4 py-2.5 text-xs text-gray-100 outline-none transition-all text-right"
-                    />
-                  </div>
-
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button 
-                    type="submit"
-                    className="w-full bg-gradient-to-l from-purple-600 to-indigo-600 text-white font-black text-xs py-3.5 rounded-xl transition-all shadow-md"
-                  >
-                    אני רוצה את הבדיקה בחינם! 🚀
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setIsAuditModalOpen(false)}
-                    className="w-1/3 bg-gray-900 border border-gray-800 text-gray-400 font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-colors text-xs"
-                  >
-                    אולי אחר כך
-                  </button>
-                </div>
-
-                <div className="text-[9px] text-gray-500 text-center">
-                  * הסריקה והאנליזה מתבצעות על ידי צוות המומחים שלנו באופן ידני וללא כל התחייבות כספית מצדכם.
-                </div>
-
-              </form>
             )}
+            {viewMode === 'favorites' && (
+               <div className="max-w-[1440px] mx-auto px-6 py-10 w-full min-h-[50vh]">
+                  <h2 className="text-3xl font-black text-slate-900 mb-8">המועדפים שלי</h2>
+                  {favorites.length === 0 ? (
+                     <div className="text-gray-500">לא שמרת עדיין מקומות למועדפים.</div>
+                  ) : (
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {favorites.map(zimmer => renderGridCard(zimmer))}
+                     </div>
+                  )}
+               </div>
+            )}
+          </>
+        )}
+      </main>
 
-          </div>
+      {renderFooter()}
+      {renderMobileFiltersModal()}
+
+      {toastMessage && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 animate-fade-in font-semibold text-sm">
+          {toastMessage}
         </div>
       )}
-
     </div>
   );
 }
